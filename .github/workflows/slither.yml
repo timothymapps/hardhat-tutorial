@@ -1,8 +1,28 @@
 name: Slither Analysis
-on: [push]
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write  # needed to upload SARIF to Code Scanning
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: crytic/slither-action@v0.4.1
+
+      - name: Run Slither
+        id: slither
+        uses: crytic/slither-action@v0.4.1
+        with:
+          sarif: results.sarif
+          fail-on: none  # don't fail the workflow on findings
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
