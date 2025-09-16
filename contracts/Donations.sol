@@ -5,12 +5,11 @@ contract Donations {
     string public name; // Name of the donation campaign
     string public org_name; // Name of the organization of the campaign
     string public description; // Description of the donation campaign
-    uint256 public goal; // Goal(monetary) of the campaign
-    uint256 public deadline; // Deadline of the campaign
+    uint32 public goal; // Goal(monetary) of the campaign
+    uint16 public deadline; // Deadline of the campaign
     address public owner; // Address of the campaign's owner's wallet
-    bool public pause; // If the campaign is paused or not
 
-    enum CampaignState { Active, Successful, Failed }
+    enum CampaignState { Active, Paused, Successful, Failed }
     CampaignState public state;
 
     struct Tier {
@@ -39,7 +38,7 @@ contract Donations {
     }
 
     modifier notPaused() {
-        require(!pause, "Contract is paused.");
+        require(!state == CampaignState.Paused, "Campaign is paused.");
         _;
     }
 
@@ -47,8 +46,8 @@ contract Donations {
         string memory _name,
         string memory _org_name,
         string memory _description,
-        uint256 _goal,
-        uint256 _duration_in_days
+        uint32 _goal,
+        uint16 _duration_in_days
     ) {
         name = _name;
         org_name = _org_name;
@@ -116,7 +115,12 @@ contract Donations {
     }
 
     function togglePause() public onlyOwner {
-        pause = !pause;
+        if(state == CampaignState.Paused) {
+            state = CampaignState.Active;
+        }
+        if(state == CampaignState.Active) {
+            state = CampaignState.Paused;
+        }
     }
 
     function getCampaignStatus() public view returns (CampaignState) {
