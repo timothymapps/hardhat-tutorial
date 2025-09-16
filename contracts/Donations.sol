@@ -36,7 +36,7 @@ contract Donations is Ownable, Pausable, ReentrancyGuard {
         string memory _name,
         string memory _orgName,
         string memory _description,
-        uint32 _goal,
+        uint256 _goal,
         uint16 _durationDays,
         address initialOwner
     ) Ownable(initialOwner) {
