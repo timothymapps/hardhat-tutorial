@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract Donations {
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Donations is Ownable {
     string public name; // Name of the donation campaign
     string public org_name; // Name of the organization of the campaign
     string public description; // Description of the donation campaign
     uint32 public goal; // Goal(monetary) of the campaign
     uint16 public deadline; // Deadline of the campaign
-    address public owner; // Address of the campaign's owner's wallet
 
     enum CampaignState { Active, Paused, Successful, Failed }
     CampaignState public state;
@@ -27,11 +28,6 @@ contract Donations {
     Tier[] public tiers;
     mapping(address => Donator) public donators;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can call this function");
-        _;
-    }
-
     modifier campaignOpen() {
         require(state == CampaignState.Active, "Campaign is not active.");
         _;
@@ -47,14 +43,14 @@ contract Donations {
         string memory _org_name,
         string memory _description,
         uint32 _goal,
-        uint16 _duration_in_days
-    ) {
+        uint16 _duration_in_days,
+        address initialOwner
+    ) Ownable(initialOwner) {
         name = _name;
         org_name = _org_name;
         description = _description;
         goal = _goal;
         deadline = block.timestamp + (_duration_in_days * 1 days);
-        owner = msg.sender;
         state = CampaignState.Active;
     }
 
