@@ -4,7 +4,10 @@
   "description": "Practice for when classes start",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test --network localhost"
+    "test": "npx hardhat test --network localhost",
+    "deploy-localhost": "npx hardhat ignition deploy ignition/modules/DonationsFactory.ts --network localhost --strategy create2",
+    "deploy-sepolia": "npx hardhat ignition deploy ignition/modules/DonationsFactory.ts --network sepolia --strategy create2",
+    "test-salt": "npx hardhat run scripts/predict-create2.ts --network localhost"
   },
   "author": "",
   "license": "ISC",
