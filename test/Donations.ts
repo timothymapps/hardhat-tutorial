@@ -29,6 +29,7 @@ describe("Donations", () => {
     it("deploys with correct initial state", async () => {
         const { donations, goal, durationDays } = await loadFixture(deployFixture);
 
+
         expect(await donations.name()).to.equal("Save The Turtles");
         expect(await donations.orgName()).to.equal("Ocean Org");
         expect(await donations.description()).to.equal("Help us clean beaches.");
