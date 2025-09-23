@@ -1,103 +1,185 @@
-import Image from "next/image";
+'use client';
+
+import {ConnectButton} from '@rainbow-me/rainbowkit';
+import {useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt} from 'wagmi';
+import {formatEther, parseEther} from 'viem';
+import {DONATIONS_ADDRESS} from '../../lib/contract';
+import {abi as DONATIONS_ABI} from '../../../artifacts/contracts/Donations.sol/Donations.json'
+import {useEffect, useMemo, useState} from 'react';
+
+function useDonationsReads() {
+    const name = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'name'});
+    const orgName = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'orgName'});
+    const description = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'description'});
+    const goal = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'goal'});
+    const totalRaised = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'totalRaised'});
+    const deadline = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'deadline'});
+    const status = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'getCampaignStatus'});
+    const owner = useReadContract({address: DONATIONS_ADDRESS, abi: DONATIONS_ABI, functionName: 'owner'});
+
+    return {name, orgName, description, goal, totalRaised, deadline, status, owner};
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    const {address, isConnected} = useAccount();
+    const {name, orgName, description, goal, totalRaised, deadline, status, owner} = useDonationsReads();
+    console.log(
+        {name, orgName, description, goal, totalRaised, deadline, status, owner}
+    )
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    const [amount, setAmount] = useState<string>('0.1');
+    const {writeContractAsync, data: txHash, isPending} = useWriteContract();
+    const tx = useWaitForTransactionReceipt({hash: txHash});
+
+    const isOwner = useMemo(() => {
+        if (!owner.data || !address) return false;
+        return String(owner.data).toLowerCase() === address.toLowerCase();
+    }, [owner.data, address]);
+
+
+    const progress = useMemo(() => {
+        try {
+            // @ts-ignore
+            const g = BigInt(goal.data ?? 0n);
+            // @ts-ignore
+            const r = BigInt(totalRaised.data ?? 0n);
+            // @ts-ignore
+            if (g === 0n) return 0;
+            // @ts-ignore
+            return Math.min(100, Number((r * 100n) / g));
+        } catch {
+            return 0;
+        }
+    }, [goal.data, totalRaised.data]);
+
+    const deadlineDate = useMemo(() => {
+        // @ts-ignore
+        const d = BigInt(deadline.data ?? 0n);
+        // @ts-ignore
+        if (d === 0n) return '—';
+        return new Date(Number(d) * 1000).toLocaleString();
+    }, [deadline.data]);
+
+    const statusLabel = useMemo(() => {
+        const s = Number(status.data ?? 0);
+        return s === 0 ? 'Active' : s === 1 ? 'Successful' : 'Failed';
+    }, [status.data]);
+
+    async function donate() {
+        const value = parseEther(amount || '0');
+        // wagmi v2 write to payable function; value passed here
+        // (useWriteContract docs) :contentReference[oaicite:6]{index=6}
+        await writeContractAsync({
+            address: DONATIONS_ADDRESS,
+            abi: DONATIONS_ABI,
+            functionName: 'donate',
+            value,
+        });
+    }
+
+    async function refund() {
+        await writeContractAsync({
+            address: DONATIONS_ADDRESS,
+            abi: DONATIONS_ABI,
+            functionName: 'refund',
+        });
+    }
+
+    async function withdraw() {
+        if (!isOwner) return;
+        await writeContractAsync({
+            address: DONATIONS_ADDRESS,
+            abi: DONATIONS_ABI,
+            functionName: 'withdraw',
+            args: [address!],
+        });
+    }
+
+    return (
+        <main className="mx-auto max-w-3xl p-6 space-y-6">
+            <header className="flex items-center justify-between">
+                <h1 className="text-2xl font-semibold">Donations</h1>
+                <ConnectButton/>
+            </header>
+
+            <section className="rounded-2xl border border-zinc-800 p-6 space-y-4">
+                <h2 className="text-xl font-medium">{name.data as string ?? '...'}</h2>
+                <p className="text-sm text-zinc-400">{orgName.data as string ?? '...'}</p>
+                <p className="text-zinc-200">{description.data as string ?? '...'}</p>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                        <div className="text-sm text-zinc-400">Goal</div>
+                        <div className="text-lg">{goal.data ? `${formatEther(goal.data as bigint)} ETH` : '...'}</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-zinc-400">Raised</div>
+                        <div
+                            className="text-lg">{totalRaised.data ? `${formatEther(totalRaised.data as bigint)} ETH` : '...'}</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-zinc-400">Deadline</div>
+                        <div className="text-lg">{deadlineDate}</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-zinc-400">Status</div>
+                        <div className="text-lg">{statusLabel}</div>
+                    </div>
+                </div>
+
+                <div className="w-full bg-zinc-800 rounded-full h-2 mt-2 overflow-hidden">
+                    <div
+                        className="bg-emerald-500 h-2 transition-all"
+                        style={{width: `${progress}%`}}
+                    />
+                </div>
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 p-6 space-y-3">
+                <h3 className="font-medium">Donate</h3>
+                <div className="flex gap-3">
+                    <input
+                        className="flex-1 rounded-lg bg-white border border-zinc-700 px-3 py-2 outline-none"
+                        placeholder="0.10"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                    />
+                    <button
+                        onClick={donate}
+                        disabled={!isConnected || isPending}
+                        className="rounded-lg bg-emerald-600 px-4 py-2 disabled:opacity-50"
+                    >
+                        {isPending ? 'Sending…' : 'Donate ETH'}
+                    </button>
+                </div>
+                {tx.isLoading && <div className="text-sm text-zinc-400">Waiting for confirmation…</div>}
+                {tx.isSuccess && <div className="text-sm text-emerald-400">Success: {tx.data?.transactionHash}</div>}
+                {tx.isError && <div className="text-sm text-red-400">Tx failed</div>}
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 p-6 space-y-3">
+                <h3 className="font-medium">Actions</h3>
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={refund}
+                        disabled={!isConnected || statusLabel !== 'Failed'}
+                        className="rounded-lg bg-zinc-700 px-4 py-2 disabled:opacity-50"
+                    >
+                        Refund (Failed only)
+                    </button>
+
+                    <button
+                        onClick={withdraw}
+                        disabled={!isConnected || !isOwner || statusLabel !== 'Successful'}
+                        className="rounded-lg bg-indigo-600 px-4 py-2 disabled:opacity-50"
+                    >
+                        Owner Withdraw (Successful only)
+                    </button>
+                </div>
+                <div className="text-xs text-zinc-500">
+                    Connected: {address ?? '—'} {isOwner && '(owner)'}
+                </div>
+            </section>
+        </main>
+    );
 }
