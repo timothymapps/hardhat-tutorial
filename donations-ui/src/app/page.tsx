@@ -68,7 +68,6 @@ export default function Home() {
     async function donate() {
         const value = parseEther(amount || '0');
         // wagmi v2 write to payable function; value passed here
-        // (useWriteContract docs) :contentReference[oaicite:6]{index=6}
         await writeContractAsync({
             address: DONATIONS_ADDRESS,
             abi: DONATIONS_ABI,
