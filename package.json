@@ -4,16 +4,22 @@
   "description": "Practice for when classes start",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx hardhat test --network localhost",
+    "deploy-localhost": "npx hardhat ignition deploy ignition/modules/DonationsFactory.ts --network localhost --strategy create2",
+    "deploy-sepolia": "npx hardhat ignition deploy ignition/modules/DonationsFactory.ts --network sepolia --strategy create2",
+    "test-salt": "npx hardhat run scripts/predict-create2.ts --network localhost"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "hardhat": "^2.26.1"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
     "dotenv": "^17.2.2",
+    "ethers": "^6.15.0",
     "ts-node": "^10.9.2"
   }
 }
